@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">transport en ligne</string>
+    <string name="compte">
+        <u>créer un compte</u>
+    </string>
+    <string name="title_activity_maps">MapsActivity</string>
+    <string name="title_activity_maps2">MapsActivity2</string>
+
+</resources>
