@@ -10,6 +10,11 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.RetryPolicy;
+import com.android.volley.TimeoutError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.example.transportenligne.Error;
 
 import com.android.volley.Request;
@@ -101,48 +106,77 @@ public class MainActivity_inscrit_client extends AppCompatActivity {
                 }
 
                 // Envoyer la requête POST avec Volley
-                //String url = "https://10.0.2.2:8080/api/clients";
-                String url = "http://192.168.1.25:8000/api/list";
+                String url = "http://10.0.2.2:8000/api/add";
+                //String url = "http://192.168.1.25:8000/api/list";
 
-                System.out.printf(url);
+                // Create a JSON object with the data you want to send
+                JSONObject requestData = new JSONObject();
+                try {
+                    requestData.put("username", mFullNameEditText.getText().toString().trim());
+                    requestData.put("password", mPasswordEditText.getText().toString().trim());
+                    requestData.put("email", mEmailEditText.getText().toString().trim());
 
-                RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
-                StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
-                        new Response.Listener<String>() {
-                            @Override
-                            public void onResponse(String response) {
-                                // Gérer la réponse du serveur
-                                Toast.makeText(MainActivity_inscrit_client.this, "Inscription réussie!", Toast.LENGTH_SHORT).show();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
 
-                                // Naviguer vers une autre activité
-                                Intent intent = new Intent(MainActivity_inscrit_client.this, MainActivity_authentification.class);
-                                startActivity(intent);
-                            }
-                        }, new Response.ErrorListener() {
+                // Declare the JsonObjectRequest variable
+
+                JsonObjectRequest jsonRequest2;
+                try {
+                    // Create a new JsonObjectRequest with the request method, URL, and the JSON data
+                    //JsonObjectRequest finalJsonRequest = jsonRequest;
+                     jsonRequest2  = new JsonObjectRequest(Request.Method.POST, url, requestData,
+                            new Response.Listener<JSONObject>() {
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    // Handle the response from the server
+                                    // Process the response JSON object
+
+
+                                    Log.d("MyApp","response est la suivante: "+response.toString());
+                                    Toast.makeText(MainActivity_inscrit_client.this, "Inscription réussie!", Toast.LENGTH_SHORT).show();
+                                    // String message = response.getString("message");
+                                    // Handle the message as needed
+
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    // Handle errors that occurred during the request
+                                    if (error instanceof TimeoutError) {
+                                        // Retry the request
+                                        Log.d("MyApp","retry ....");
+
+                                    } else {
+                                        error.printStackTrace();
+                                    }
+                                }
+                            });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return;
+                }
+
+// Add the request to the RequestQueue
+                jsonRequest2.setRetryPolicy(new RetryPolicy() {
                     @Override
-                    public void onErrorResponse(VolleyError error) {
-                        // La requête a échoué
-                        System.out.printf("error");
-
-                        Log.d("MyApp",error.toString());
-
-                     /*   if (error.networkResponse != null && error.networkResponse.data != null) {
-                            GsonBuilder gsonBuilder = new GsonBuilder();
-                            Error errorResponse = gsonBuilder.create().fromJson(new String(error.networkResponse.data), Error.class);
-                            Toast.makeText(MainActivity_inscrit_client.this, errorResponse.getMessage(), Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(MainActivity_inscrit_client.this, "Unable to connectxx", Toast.LENGTH_SHORT).show();
-                        }*/
+                    public int getCurrentTimeout() {
+                        return 60000; // Timeout in milliseconds
                     }
-                }) {
+
                     @Override
-                    protected Map<String, String> getParams() {
-                        Map<String, String> params = new HashMap<>();
-                        params.put("username", mFullNameEditText.getText().toString().trim());
-                        params.put("password", mPasswordEditText.getText().toString().trim());
-                        params.put("email", mEmailEditText.getText().toString().trim());
-                        Log.d("MyApp",params.toString());
-                        return params;
+                    public int getCurrentRetryCount() {
+                        return 3; // Number of retries
                     }
-                };
-                queue.add(stringRequest);};});}}
+
+                    @Override
+                    public void retry(VolleyError error) throws VolleyError {
+                        // You can log the retry attempt here
+                        Volley.newRequestQueue(getApplicationContext()).add(jsonRequest2);
+                    }
+                });
+                Volley.newRequestQueue(getApplicationContext()).add(jsonRequest2);
+                /////////////////////////
+            };});}}
